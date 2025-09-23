@@ -6,3 +6,6 @@ vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center" })
 
 -- Normal mode: 'vv' enters Visual Block Mode (as if you pressed Ctrl+V)
 vim.keymap.set("n", "vv", "<C-v>", { noremap = true, desc = "Visual Block Mode (vv)" })
+
+-- Terminal mode mapping: Ctrl-\ Ctrl-n = Escape
+vim.api.nvim_set_keymap("t", "<Leader><Esc>", "<C-\\><C-n>", { noremap = true, silent = true })
