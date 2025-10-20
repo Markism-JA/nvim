@@ -8,8 +8,6 @@ return {
             "cssls",
             "tsserver",
             "rust_analyzer",
-            "roslyn",
-            "rzls",
         },
     },
 }
