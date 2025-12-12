@@ -1,6 +1,4 @@
 return {
-
-    -- VimTeX for LaTeX editing and compilation
     {
         "lervag/vimtex",
         ft = { "tex", "bib" },
@@ -20,7 +18,7 @@ return {
         end,
     },
 
-    -- Treesitter for better syntax highlighting
+    -- Syntax Highlighting
     {
         "nvim-treesitter/nvim-treesitter",
         opts = {
@@ -35,7 +33,7 @@ return {
         },
     },
 
-    -- 🧠 LSP setup for LaTeX
+    -- LSP
     {
         "neovim/nvim-lspconfig",
         opts = {
@@ -46,7 +44,7 @@ return {
         },
     },
 
-    -- 🪄 Auto-pairs for parentheses, brackets, etc.
+    -- Auto-pairs for parentheses, brackets, etc.
     {
         "windwp/nvim-autopairs",
         event = "InsertEnter",

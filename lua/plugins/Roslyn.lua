@@ -7,9 +7,9 @@ return {
                 "tris203/rzls.nvim",
                 config = true,
             },
-            "mason-lspconfig.nvim", -- Declare a dependency on mason-lspconfig
+            "mason-lspconfig.nvim",
         },
-        opts = {}, -- You can add custom options for roslyn.nvim here
+        opts = {},
         config = function()
             -- Configure the roslyn.nvim plugin to communicate with rzls
             require("roslyn").setup({
