@@ -11,10 +11,8 @@ return {
         },
         opts = {},
         config = function()
-            -- Configure the roslyn.nvim plugin to communicate with rzls
             require("roslyn").setup({
                 handlers = require("rzls.roslyn_handlers"),
-                -- Other configuration options for roslyn.nvim
             })
         end,
     },
