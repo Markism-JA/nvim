@@ -1,3 +1,5 @@
+-- BUG: Global does not work, logging works but the actual formatting does not. Not sure why.
+
 return {
     "stevearc/conform.nvim",
     opts = function(_, opts)
@@ -23,12 +25,11 @@ return {
                     return { "-c", 'dotnet csharpier format "$1" > /dev/null 2>&1', "--", "$FILENAME" }
                 else
                     vim.notify("Using GLOBAL Mason csharpier", vim.log.levels.INFO)
-                    return { "format" }
+                    return {}
                 end
             end,
 
             cwd = util.root_file({ ".config/dotnet-tools.json" }),
-            stdin = false,
         }
 
         opts.formatters_by_ft = opts.formatters_by_ft or {}
