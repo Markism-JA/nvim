@@ -22,7 +22,7 @@ return {
             "netcoredbg",
 
             -- formatter
-            prettierd,
+            "prettierd",
         },
     },
 }
