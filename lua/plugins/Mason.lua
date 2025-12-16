@@ -20,6 +20,9 @@ return {
 
             -- debugger
             "netcoredbg",
+
+            -- formatter
+            prettierd,
         },
     },
 }
