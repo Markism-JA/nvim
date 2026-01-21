@@ -9,3 +9,6 @@ vim.keymap.set("n", "vv", "<C-v>", { noremap = true, desc = "Visual Block Mode (
 
 -- Terminal mode mapping: Ctrl-\ Ctrl-n = Escape
 vim.api.nvim_set_keymap("t", "<Leader><Esc>", "<C-\\><C-n>", { noremap = true, silent = true })
+
+vim.keymap.set("n", "q", "<Nop>", { desc = "Disable macro recording" })
+vim.keymap.set("n", "<leader>m", "q", { desc = "Record Macro" })
