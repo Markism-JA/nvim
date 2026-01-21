@@ -17,6 +17,7 @@ return {
             "marksman",
             "ruff",
             "vtsls",
+            "lemminx",
 
             -- debugger
             "netcoredbg",
