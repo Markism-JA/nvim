@@ -1,0 +1,41 @@
+{
+    "Startup Object": {
+        "prefix": "startup",
+        "body": [
+            "<StartupObject>${1:Namespace.Program}</StartupObject>"
+        ],
+        "description": "Sets the entry point for the application"
+    },
+    "Project Reference": {
+        "prefix": "pref",
+        "body": [
+            "<ItemGroup>",
+            "\t<ProjectReference Include=\"${1:../Path/Project.csproj}\" />",
+            "</ItemGroup>"
+        ],
+        "description": "Adds a ProjectReference block"
+    },
+    "Package Reference": {
+        "prefix": "pkg",
+        "body": [
+            "<PackageReference Include=\"${1:PackageName}\" Version=\"${2:1.0.0}\" />"
+        ],
+        "description": "Adds a NuGet PackageReference"
+    },
+    "Property Group": {
+        "prefix": "props",
+        "body": [
+            "<PropertyGroup>",
+            "\t$0",
+            "</PropertyGroup>"
+        ],
+        "description": "Creates a new property group block"
+    },
+    "Overflow & Underflow Checking": {
+        "prefix": "check",
+        "body": [
+            "<CheckForOverflowUnderflow>${1|true,false|}</CheckForOverflowUnderflow>"
+        ],
+        "description": "Enables or disables arithmetic overflow checking"
+    }
+}

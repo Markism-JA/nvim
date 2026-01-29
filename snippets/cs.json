@@ -1,0 +1,16 @@
+{
+    "Console.WriteLine": {
+        "prefix": "cwl",
+        "body": [
+            "Console.WriteLine($0);"
+        ],
+        "description": "Log to the console"
+    },
+    "Console.WriteLine Interpolated": {
+        "prefix": "cwli",
+        "body": [
+            "Console.WriteLine($\"$0\");"
+        ],
+        "description": "Log to the console with string interpolation"
+    }
+}

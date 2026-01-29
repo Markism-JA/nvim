@@ -1,0 +1,15 @@
+{
+    "name": "my-custom-snippets",
+    "contributes": {
+        "snippets": [
+            {
+                "language": "cs",
+                "path": "./cs.json"
+            },
+            {
+                "language": "xml",
+                "path": "./csproj.json"
+            }
+        ]
+    }
+}

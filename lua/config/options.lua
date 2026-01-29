@@ -17,5 +17,6 @@ vim.filetype.add({
         csproj = "xml",
         props = "xml",
         targets = "xml",
+        axaml = "xml",
     },
 })
