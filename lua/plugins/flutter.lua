@@ -2,11 +2,10 @@ return {
     {
         "akinsho/flutter-tools.nvim",
         lazy = false,
-        dependencies = {
-            "nvim-lua/plenary.nvim",
-            "mfussenegger/nvim-dap",
-        },
         config = function()
+            local dap = require("dap")
+
+            -- 1. SETUP FLUTTER TOOLS
             require("flutter-tools").setup({
                 debugger = {
                     enabled = true,
@@ -14,61 +13,41 @@ return {
                 },
             })
 
-            local dap = require("dap")
+            -- 2. DART ADAPTER (CLI)
+            dap.adapters.dart_cli = function(callback, config)
+                config.console = "externalTerminal"
+                callback({
+                    type = "executable",
+                    command = "dart",
+                    args = { "debug_adapter" },
+                })
+            end
 
-            -- ======================================================================
-            -- 1. ADAPTERS (The Engines)
-            -- ======================================================================
-
-            -- A. Pure Dart Adapter (Standard)
-            dap.adapters.dart_cli = {
-                type = "executable",
-                command = "dart",
-                args = { "debug_adapter" },
-            }
-
-            -- B. The "Interactive" Flutter Adapter (The Fix)
-            -- Instead of a static definition, this is a FUNCTION.
-            -- nvim-dap calls this when the "flutter_picker" config type is selected.
+            -- 3. FLUTTER ADAPTER (Device Picker)
             dap.adapters.flutter_picker = function(callback, config)
                 local items = { "chrome", "linux", "macos", "windows", "all" }
-
-                vim.ui.select(items, { prompt = "Select Target Device:" }, function(choice)
-                    -- 1. Handle Cancel (User pressed Esc)
-                    if choice == nil then
-                        return
+                vim.ui.select(items, { prompt = "Select Device:" }, function(choice)
+                    if choice then
+                        config.toolArgs = { "-d", choice }
+                        config.name = "Flutter (" .. choice .. ")"
+                        callback({
+                            type = "executable",
+                            command = "flutter",
+                            args = { "debug_adapter" },
+                        })
                     end
-
-                    -- 2. Inject the selection into the config
-                    config.toolArgs = { "-d", choice }
-
-                    -- Update the tab name to what is running
-                    config.name = "Flutter (" .. choice .. ")"
-
-                    -- 3. Hand off to the REAL Flutter Adapter
-                    callback({
-                        type = "executable",
-                        command = "flutter",
-                        args = { "debug_adapter" },
-                    })
                 end)
             end
 
-            -- ======================================================================
-            -- 2. CONFIGURATIONS (The Menu)
-            -- ======================================================================
+            -- 4. CONFIGURATIONS
             dap.configurations.dart = {
-
-                -- CONFIG 1: Flutter (Interactive)
                 {
                     type = "flutter_picker",
                     request = "launch",
-                    name = "Flutter: Select Device",
+                    name = "Flutter App",
                     program = "${workspaceFolder}/lib/main.dart",
                     cwd = "${workspaceFolder}",
                 },
-
-                -- CONFIG 2: Pure Dart (Current File)
                 {
                     type = "dart_cli",
                     request = "launch",
@@ -76,8 +55,6 @@ return {
                     program = "${file}",
                     cwd = "${workspaceFolder}",
                 },
-
-                -- CONFIG 3: Pure Dart (Main)
                 {
                     type = "dart_cli",
                     request = "launch",
@@ -87,6 +64,7 @@ return {
                 },
             }
 
+            -- Load VSCode launch.json if present
             pcall(require("dap.ext.vscode").load_launchjs, nil, { dart = { "flutter_picker", "dart_cli" } })
         end,
     },
