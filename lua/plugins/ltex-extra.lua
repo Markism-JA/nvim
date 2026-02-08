@@ -1,3 +1,4 @@
+-- This is for spell checks—basically Grammarly in latex and markdown.
 return {
     "barreiroleo/ltex_extra.nvim",
     ft = { "markdown", "tex" },
