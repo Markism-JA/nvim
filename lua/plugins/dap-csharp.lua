@@ -4,36 +4,13 @@ return {
         optional = true,
         opts = function()
             local dap = require("dap")
+            local overseer = require("overseer")
+            local dap_vscode = require("dap.ext.vscode")
 
-            local function build_project()
-                vim.notify("Building project...", vim.log.levels.INFO)
-
-                local cmd = { "dotnet", "build", "-c", "Debug" }
-
-                local result = vim.system(cmd, { text = true }):wait()
-
-                if result.code ~= 0 then
-                    vim.notify(
-                        "Build Failed!\n" .. (result.stdout or "") .. (result.stderr or ""),
-                        vim.log.levels.ERROR
-                    )
-                    return false
-                else
-                    vim.notify("Build Success!", vim.log.levels.INFO)
-                    return true
-                end
-            end
-
-            local function get_dll_path(ensure_built)
+            local function get_dll_path()
                 local cwd = vim.fn.getcwd()
-
-                if ensure_built then
-                    if not build_project() then
-                        return nil
-                    end
-                end
-
                 local csproj_path = vim.fn.glob(cwd .. "/*.csproj")
+
                 if csproj_path == "" then
                     return vim.fn.input("No .csproj found. Path to dll: ", cwd .. "/bin/Debug/", "file")
                 end
@@ -58,13 +35,11 @@ return {
                     end
                 end
 
-                -- Construct path: bin/Debug/{framework}/{assembly_name}.dll
                 local dll_path = string.format("%s/bin/Debug/%s/%s.dll", cwd, framework, assembly_name)
 
                 if vim.fn.filereadable(dll_path) == 1 then
                     return dll_path
                 else
-                    vim.notify("DLL not found at: " .. dll_path, vim.log.levels.WARN)
                     return vim.fn.input("DLL not found. Path to dll: ", cwd .. "/bin/Debug/", "file")
                 end
             end
@@ -77,38 +52,54 @@ return {
                 }
             end
 
-            -- DEFAULT CONFIGURATIONS
             dap.configurations.cs = {
-                -- OPTION 1: Build First (Safest)
                 {
                     type = "coreclr",
-                    name = "Build & Debug",
+                    name = "Build & Debug (Overseer)",
                     request = "launch",
                     runInTerminal = true,
                     console = "integratedTerminal",
-                    -- NOTE: Not supported by netcoredbg
                     program = function()
-                        return get_dll_path(true)
+                        return coroutine.create(function(dap_run_co)
+                            overseer.run_template({ name = "Dotnet Build" }, function(task)
+                                if not task then
+                                    vim.notify(
+                                        "Could not find 'Dotnet Build' task. Check overseer.lua",
+                                        vim.log.levels.ERROR
+                                    )
+                                    coroutine.resume(dap_run_co, nil)
+                                    return
+                                end
+
+                                task:subscribe("on_complete", function()
+                                    if task.status == "SUCCESS" then
+                                        local dll = get_dll_path()
+                                        coroutine.resume(dap_run_co, dll)
+                                    else
+                                        vim.notify("Build Failed", vim.log.levels.ERROR)
+                                        overseer.open({ enter = false })
+                                        coroutine.resume(dap_run_co, nil)
+                                    end
+                                end)
+
+                                task:start()
+                            end)
+                        end)
                     end,
                 },
-                -- OPTION 2: Just Debug (Fastest)
                 {
                     type = "coreclr",
                     name = "Debug (No Build)",
                     request = "launch",
                     runInTerminal = true,
                     console = "integratedTerminal",
-                    -- NOTE: Not supported by netcoredbg
                     program = function()
-                        return get_dll_path(false)
+                        return get_dll_path()
                     end,
                 },
             }
 
-            local dap_vscode = require("dap.ext.vscode")
-
             dap_vscode.type_to_filetypes["coreclr"] = { "cs" }
-
             dap_vscode.load_launchjs()
         end,
     },
