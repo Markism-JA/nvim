@@ -5,7 +5,6 @@ return {
         config = function()
             local dap = require("dap")
 
-            -- 1. SETUP FLUTTER TOOLS
             require("flutter-tools").setup({
                 debugger = {
                     enabled = true,
@@ -13,7 +12,6 @@ return {
                 },
             })
 
-            -- 2. DART ADAPTER (CLI)
             dap.adapters.dart_cli = function(callback, config)
                 config.console = "externalTerminal"
                 callback({
@@ -23,7 +21,6 @@ return {
                 })
             end
 
-            -- 3. FLUTTER ADAPTER (Device Picker)
             dap.adapters.flutter_picker = function(callback, config)
                 local items = { "chrome", "linux", "macos", "windows", "all" }
                 vim.ui.select(items, { prompt = "Select Device:" }, function(choice)
@@ -39,7 +36,6 @@ return {
                 end)
             end
 
-            -- 4. CONFIGURATIONS
             dap.configurations.dart = {
                 {
                     type = "flutter_picker",
@@ -64,7 +60,6 @@ return {
                 },
             }
 
-            -- Load VSCode launch.json if present
             pcall(require("dap.ext.vscode").load_launchjs, nil, { dart = { "flutter_picker", "dart_cli" } })
         end,
     },
