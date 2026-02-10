@@ -1,6 +1,6 @@
 return {
     {
-        "nvim-minis/mini.move",
+        "nvim-mini/mini.move",
         opts = {
             mappings = {
                 -- Normal Mode
