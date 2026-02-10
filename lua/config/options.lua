@@ -1,16 +1,18 @@
--- Options are automatically loaded before lazy.nvim startup
--- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
--- Add any additional options here
---
--- Indentation settings
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
-vim.opt.expandtab = true -- Convert tabs to spaces
-vim.opt.shiftwidth = 4 -- Number of spaces for each indentation level
-vim.opt.tabstop = 4 -- Number of spaces a <Tab> counts for
-vim.opt.softtabstop = 4 -- Number of spaces when pressing <Tab>
-vim.opt.autoindent = true -- Copy indentation from current line
-vim.opt.smartindent = true -- Smarter auto-indenting when starting a new line
+vim.opt.expandtab = true
+vim.opt.shiftwidth = 4
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+vim.opt.autoindent = true
+vim.opt.smartindent = true
+vim.opt.guifont = "JetBrainsMono Nerd Font:h9"
+if vim.g.neovide then
+    vim.g.neovide_padding_top = 20
+    vim.g.neovide_padding_bottom = 20
+    vim.g.neovide_padding_left = 20
+    vim.g.neovide_padding_right = 20
+end
 
 vim.filetype.add({
     extension = {
