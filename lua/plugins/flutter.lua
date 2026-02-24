@@ -60,7 +60,7 @@ return {
                 },
             }
 
-            pcall(require("dap.ext.vscode").load_launchjs, nil, { dart = { "flutter_picker", "dart_cli" } })
+            require("dap.ext.vscode").type_to_filetypes["dart"] = { "dart" }
         end,
     },
 

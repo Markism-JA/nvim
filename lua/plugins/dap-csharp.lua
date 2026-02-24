@@ -9,7 +9,8 @@ return {
 
             local function get_dll_path()
                 local cwd = vim.fn.getcwd()
-                local csproj_path = vim.fn.glob(cwd .. "/*.csproj")
+                local csproj_files = vim.fn.globpath(cwd, "*.csproj", false, true)
+                local csproj_path = csproj_files[1] or ""
 
                 if csproj_path == "" then
                     return vim.fn.input("No .csproj found. Path to dll: ", cwd .. "/bin/Debug/", "file")
@@ -100,7 +101,6 @@ return {
             }
 
             dap_vscode.type_to_filetypes["coreclr"] = { "cs" }
-            dap_vscode.load_launchjs()
         end,
     },
 }
