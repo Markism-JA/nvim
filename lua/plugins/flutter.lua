@@ -34,6 +34,16 @@ return {
                 },
             })
 
+            vim.api.nvim_create_autocmd("FileType", {
+                pattern = "dart",
+                callback = function()
+                    vim.opt_local.shiftwidth = 2
+                    vim.opt_local.tabstop = 2
+                    vim.opt_local.softtabstop = 2
+                    vim.opt_local.expandtab = true
+                end,
+            })
+
             dap.adapters.dart_cli = function(callback, config)
                 config.console = "externalTerminal"
                 callback({ type = "executable", command = "dart", args = { "debug_adapter" } })
