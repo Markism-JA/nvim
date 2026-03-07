@@ -1,3 +1,5 @@
+vim.o.exrc = true
+
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 vim.opt.expandtab = true
