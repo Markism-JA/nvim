@@ -1,5 +1,7 @@
 vim.o.exrc = true
 
+vim.opt.conceallevel = 2
+vim.opt.concealcursor = "nc"
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 vim.opt.expandtab = true
