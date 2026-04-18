@@ -9,6 +9,7 @@ vim.opt.shiftwidth = 4
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
 vim.opt.autoindent = true
+vim.g.lazygit_config = false
 vim.opt.smartindent = true
 vim.opt.guifont = "JetBrainsMono Nerd Font:h9"
 if vim.g.neovide then
