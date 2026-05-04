@@ -1,10 +1,6 @@
 return {
-    {
-        "seblyng/roslyn.nvim",
-        ft = { "cs", "razor" },
-        dependencies = {
-            "mason-lspconfig.nvim",
-        },
-        opts = {},
-    },
+    "seblyng/roslyn.nvim",
+    ---@module 'roslyn.config'
+    ---@type RoslynNvimConfig
+    opts = {},
 }
