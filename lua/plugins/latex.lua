@@ -6,4 +6,12 @@ return {
             vim.g.vimtex_compiler_method = "latexmk"
         end,
     },
+    {
+        "stevearc/conform.nvim",
+        opts = {
+            formatters_by_ft = {
+                tex = { "tex-fmt" },
+            },
+        },
+    },
 }
