@@ -22,11 +22,11 @@ return {
                     enabled = true,
                 },
                 lsp = {
-                    color = {
-                        enabled = true,
-                        virtual_text = true,
-                        virtual_text_str = "■",
-                    },
+                    on_attach = function(client, bufnr)
+                        if vim.lsp.document_color then
+                            vim.lsp.document_color.enable(true, { bufnr = bufnr })
+                        end
+                    end,
                 },
                 debugger = {
                     enabled = true,
