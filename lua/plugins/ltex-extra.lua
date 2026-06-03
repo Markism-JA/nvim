@@ -6,8 +6,15 @@ return {
     config = function()
         require("ltex_extra").setup({
             server_opts = {
-                on_attach = function(client, bufnr) end,
-                settings = {},
+                on_attach = function(client, bufnr)
+                    vim.log.set_level(vim.log.levels.ERROR)
+                end,
+                settings = {
+                    ltex = {
+                        logLevel = "error",
+                        diagnosticSeverity = "error",
+                    },
+                },
             },
         })
     end,

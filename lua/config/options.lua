@@ -27,3 +27,5 @@ vim.filetype.add({
         axaml = "xml",
     },
 })
+
+vim.lsp.log.set_level(vim.lsp.log.levels.ERROR)
