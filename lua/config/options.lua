@@ -28,4 +28,11 @@ vim.filetype.add({
     },
 })
 
+vim.filetype.add({
+    extension = {
+        asm = "nasm",
+        s = "nasm",
+    },
+})
+
 vim.lsp.log.set_level(vim.lsp.log.levels.ERROR)
