@@ -3,21 +3,21 @@ return {
     opts = function(_, opts)
         local util = require("conform.util")
 
-        -- 1. Receive the context table (ctx) instead of a raw buffer number
-        local function check_local_tool(self, ctx)
-            local bufnr = ctx.buf -- Extract the actual buffer ID
+        local function check_local_tool(ctx)
+            local bufnr = ctx.buf
 
-            -- Check if we've already cached the result for this specific buffer
+            if not ctx.filename or ctx.filename == "" then
+                return false
+            end
+
             if vim.b[bufnr].has_local_csharpier == nil then
-                -- Pass self and ctx down to the conform utility
-                local root = util.root_file({ ".config/dotnet-tools.json" })(self, ctx)
+                local root = util.root_file({ ".config/dotnet-tools.json" })(ctx.filename)
                 vim.b[bufnr].has_local_csharpier = (root ~= nil)
 
-                -- Log the notification only once per buffer
                 if vim.b[bufnr].has_local_csharpier then
-                    vim.notify("Using LOCAL dotnet csharpier", vim.log.levels.INFO)
+                    vim.notify("Using LOCAL dotnet csharpier", vim.log.levels.INFO, { title = "Conform" })
                 else
-                    vim.notify("Using GLOBAL Mason csharpier", vim.log.levels.INFO)
+                    vim.notify("Using GLOBAL Mason csharpier", vim.log.levels.INFO, { title = "Conform" })
                 end
             end
 
@@ -26,22 +26,21 @@ return {
 
         opts.formatters = opts.formatters or {}
         opts.formatters.csharpier = {
-            -- 2. Update the signatures to expect (self, ctx)
-            command = function(self, ctx)
-                if check_local_tool(self, ctx) then
+            command = function(ctx)
+                if check_local_tool(ctx) then
                     return "dotnet"
                 end
                 return "csharpier"
             end,
 
-            args = function(self, ctx)
-                if check_local_tool(self, ctx) then
+            args = function(ctx)
+                if check_local_tool(ctx) then
                     return { "csharpier", "format", "--stdin-path", "$FILENAME" }
                 end
                 return { "format" }
             end,
 
-            cwd = util.root_file({ ".config/dotnet-tools.json", ".sln", ".csproj" }),
+            cwd = util.root_file({ ".config/dotnet-tools.json", ".sln", ".slnx", ".csproj" }),
         }
 
         opts.formatters_by_ft = opts.formatters_by_ft or {}
