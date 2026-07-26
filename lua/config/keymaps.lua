@@ -10,5 +10,14 @@ vim.keymap.set("n", "vv", "<C-v>", { noremap = true, desc = "Visual Block Mode (
 -- Terminal mode mapping: Ctrl-\ Ctrl-n = Escape
 vim.api.nvim_set_keymap("t", "<Leader><Esc>", "<C-\\><C-n>", { noremap = true, silent = true })
 
-vim.keymap.set("n", "q", "<Nop>", { desc = "Disable macro recording" })
-vim.keymap.set("n", "<leader>m", "q", { desc = "Record Macro" })
+vim.keymap.set("n", "q", "<Nop>", { desc = "Disable accidental macro recording" })
+
+vim.keymap.set("n", "<leader>m", function()
+    if vim.fn.reg_recording() == "" then
+        vim.notify("Recording macro...", vim.log.levels.INFO)
+        return "q"
+    else
+        vim.notify("Macro recorded!", vim.log.levels.INFO)
+        return "q"
+    end
+end, { expr = true, desc = "Toggle Macro Recording" })
