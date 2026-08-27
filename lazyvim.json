@@ -23,7 +23,6 @@
     "lazyvim.plugins.extras.lang.solidity",
     "lazyvim.plugins.extras.lang.tex",
     "lazyvim.plugins.extras.lang.typescript",
-    "lazyvim.plugins.extras.lang.typst",
     "lazyvim.plugins.extras.lang.yaml",
     "lazyvim.plugins.extras.lsp.neoconf",
     "lazyvim.plugins.extras.test.core",
