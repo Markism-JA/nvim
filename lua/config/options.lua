@@ -35,4 +35,25 @@ vim.filetype.add({
     },
 })
 
+vim.filetype.add({
+    extension = {
+        xsl = "xsl",
+        xslt = "xslt",
+        jsx = "javascript.jsx",
+        tsx = "typescript.tsx",
+        typ = "typst",
+        typst = "typst",
+        dox = "c.doxygen",
+    },
+    pattern = {
+        [".*docker%-compose.*%.ya?ml"] = "yaml.docker-compose",
+        [".*compose.*%.ya?ml"] = "yaml.docker-compose",
+        [".*gitlab%-ci.*%.ya?ml"] = "yaml.gitlab",
+        [".*/templates/.*%.ya?ml"] = "yaml.helm-values",
+        [".*values.*%.ya?ml"] = "yaml.helm-values",
+        [".*%.dox"] = "c.doxygen",
+        [".*%.doxygen"] = "cpp.doxygen",
+    },
+})
+
 vim.lsp.log.set_level(vim.lsp.log.levels.ERROR)
