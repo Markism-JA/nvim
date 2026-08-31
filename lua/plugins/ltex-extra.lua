@@ -1,7 +1,7 @@
 -- This is for spell checks—basically Grammarly in latex and markdown.
 return {
     "barreiroleo/ltex_extra.nvim",
-    ft = { "markdown", "tex" },
+    ft = { "tex" },
     dependencies = { "neovim/nvim-lspconfig" },
     config = function()
         require("ltex_extra").setup({
