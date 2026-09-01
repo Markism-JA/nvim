@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Typst Pipeline: Logging & Diagnostics
 -- ============================================================================
-local ENABLE_DEBUG = true
+local ENABLE_DEBUG = false
 local LOG_FILE = vim.fn.stdpath("state") .. "/typst-pipeline.log"
 
 local function typst_log(stage, data)
@@ -232,6 +232,10 @@ return {
                     return get_typst_project_root(fname)
                 end,
 
+                init_options = {
+                    formatterMode = "typstyle",
+                },
+
                 settings = {
                     exportPdf = "onSave",
                     formatterMode = "typstyle",
@@ -247,11 +251,16 @@ return {
                         table.insert(font_settings, font_dir)
                     end
 
+                    new_config.init_options = new_config.init_options or {}
+                    new_config.init_options.formatterMode = "typstyle"
+
                     new_config.settings = new_config.settings or {}
+                    new_config.settings.formatterMode = "typstyle"
                     new_config.settings.rootPath = new_root_dir
                     new_config.settings.fontPaths = font_settings
 
                     new_config.settings.tinymist = new_config.settings.tinymist or {}
+                    new_config.settings.tinymist.formatterMode = "typstyle"
                     new_config.settings.tinymist.rootPath = new_root_dir
                     new_config.settings.tinymist.fontPaths = font_settings
 
@@ -312,5 +321,14 @@ return {
                 return nil
             end,
         },
+    },
+
+    {
+        "stevearc/conform.nvim",
+        opts = function(_, opts)
+            opts.formatters_by_ft = opts.formatters_by_ft or {}
+            -- Try typstyle binary first; if absent, invoke LSP formatting
+            opts.formatters_by_ft.typst = { "typstyle", lsp_format = "fallback" }
+        end,
     },
 }
