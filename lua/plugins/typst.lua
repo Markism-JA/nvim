@@ -199,6 +199,29 @@ return {
                 ft = "typst",
                 desc = "Unpin Main File",
             },
+            {
+                "<leader>cz",
+                function()
+                    local buf_name = vim.api.nvim_buf_get_name(0)
+                    local main_file = resolve_typst_entrypoint(buf_name)
+                    local pdf_file = main_file:gsub("%.typ$", ".pdf")
+
+                    if vim.uv.fs_stat(pdf_file) then
+                        local line = vim.api.nvim_win_get_cursor(0)[1]
+                        vim.fn.jobstart({
+                            "zathura",
+                            "--synctex-forward",
+                            string.format("%d:1:%s", line, buf_name),
+                            pdf_file,
+                        }, { detach = true })
+                        vim.notify("Opened Zathura: " .. vim.fs.basename(pdf_file), vim.log.levels.INFO)
+                    else
+                        vim.notify("PDF not found. Save the file first to trigger compilation.", vim.log.levels.WARN)
+                    end
+                end,
+                ft = "typst",
+                desc = "Open in Zathura",
+            },
         },
         opts = function(_, opts)
             opts.servers = opts.servers or {}
@@ -210,7 +233,7 @@ return {
                 end,
 
                 settings = {
-                    exportPdf = "never",
+                    exportPdf = "onSave",
                     formatterMode = "typstyle",
                     projectResolution = "lockDatabase",
                     semanticTokens = "enable",
@@ -262,6 +285,11 @@ return {
             { "<leader>cp", "<cmd>TypstPreviewToggle<cr>", desc = "Toggle Typst Preview" },
         },
         opts = {
+            -- Use a specific browser (e.g., Brave, Chromium, Firefox, Zen)
+            open_cmd = "zen-browser %s", -- '%s' is replaced by the local preview URL
+            -- or: open_cmd = "chromium --app=%s", -- opens as a standalone web app window
+            -- or: open_cmd = "brave --new-window %s",
+
             debug = false,
             invert_colors = "never",
             partial_rendering = true,
