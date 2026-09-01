@@ -142,6 +142,104 @@ local function resolve_font_path(raw_path)
 end
 
 -- ============================================================================
+-- Custom Typst Exporter (Flexible Destination & Renaming)
+-- ============================================================================
+
+--- Exports the document to a specified target directory/file or custom name asynchronously.
+--- @param target? string Optional target path or custom output filename.
+local function export_typst_document(target)
+    local buf_path = vim.api.nvim_buf_get_name(0)
+    local root = get_typst_project_root(buf_path)
+    local entrypoint = resolve_typst_entrypoint(buf_path)
+    local font_dir = resolve_font_path(buf_path)
+
+    local default_name = vim.fs.basename(entrypoint):gsub("%.typ$", "")
+    local dist_dir = root .. "/dist"
+    local target_out = ""
+
+    if not target or target == "" then
+        -- Default: <root>/dist/<default_name>.pdf
+        if not vim.uv.fs_stat(dist_dir) then
+            vim.fn.mkdir(dist_dir, "p")
+        end
+        target_out = dist_dir .. "/" .. default_name .. ".pdf"
+    else
+        target = vim.fs.normalize(target)
+
+        -- If the user only gave a new filename (no directory slashes)
+        if not target:find("/") then
+            if not target:match("%.pdf$") then
+                target = target .. ".pdf"
+            end
+            if not vim.uv.fs_stat(dist_dir) then
+                vim.fn.mkdir(dist_dir, "p")
+            end
+            target_out = dist_dir .. "/" .. target
+        else
+            -- If user provided a path
+            local stat = vim.uv.fs_stat(target)
+            if (stat and stat.type == "directory") or target:sub(-1) == "/" then
+                if not vim.uv.fs_stat(target) then
+                    vim.fn.mkdir(target, "p")
+                end
+                target_out = target:gsub("/+$", "") .. "/" .. default_name .. ".pdf"
+            else
+                if not target:match("%.pdf$") then
+                    target = target .. ".pdf"
+                end
+                local parent = vim.fs.dirname(target)
+                if parent and not vim.uv.fs_stat(parent) then
+                    vim.fn.mkdir(parent, "p")
+                end
+                target_out = target
+            end
+        end
+    end
+
+    -- Build CLI args
+    local cmd = { "typst", "compile", "--root", root }
+    if font_dir then
+        table.insert(cmd, "--font-path")
+        table.insert(cmd, font_dir)
+    end
+    table.insert(cmd, entrypoint)
+    table.insert(cmd, target_out)
+
+    vim.notify("Typst: Compiling export to " .. target_out .. "...", vim.log.levels.INFO)
+
+    vim.fn.jobstart(cmd, {
+        stdout_buffered = true,
+        stderr_buffered = true,
+        on_stderr = function(_, data)
+            if data and #data > 0 and data[1] ~= "" then
+                vim.schedule(function()
+                    vim.notify("Typst Export Error:\n" .. table.concat(data, "\n"), vim.log.levels.ERROR)
+                end)
+            end
+        end,
+        on_exit = function(_, code)
+            vim.schedule(function()
+                if code == 0 then
+                    vim.notify("Typst: Successfully exported to " .. target_out, vim.log.levels.INFO)
+                else
+                    vim.notify("Typst: Export failed with exit code " .. code, vim.log.levels.ERROR)
+                end
+            end)
+        end,
+    })
+end
+
+-- User Command: supports tab-completion for paths
+vim.api.nvim_create_user_command("TypstExport", function(opts)
+    local target = opts.args ~= "" and opts.args or nil
+    export_typst_document(target)
+end, {
+    nargs = "?",
+    complete = "file",
+    desc = "Export Typst document (optional custom name or path)",
+})
+
+-- ============================================================================
 -- Plugin Specs
 -- ============================================================================
 return {
@@ -221,6 +319,36 @@ return {
                 end,
                 ft = "typst",
                 desc = "Open in Zathura",
+            },
+            -- Quick export to project dist/<entrypoint>.pdf
+            {
+                "<leader>ce",
+                function()
+                    vim.cmd("TypstExport")
+                end,
+                ft = "typst",
+                desc = "Export PDF (Default)",
+            },
+            -- Interactive prompt: enter a custom name OR full path
+            {
+                "<leader>cE",
+                function()
+                    local buf_path = vim.api.nvim_buf_get_name(0)
+                    local entrypoint = resolve_typst_entrypoint(buf_path)
+                    local default_name = vim.fs.basename(entrypoint):gsub("%.typ$", "")
+
+                    vim.ui.input({
+                        prompt = "Export name or path: ",
+                        default = default_name,
+                        completion = "file",
+                    }, function(input)
+                        if input and input ~= "" then
+                            vim.cmd("TypstExport " .. vim.fn.fnameescape(input))
+                        end
+                    end)
+                end,
+                ft = "typst",
+                desc = "Export PDF (Custom Name / Path)",
             },
         },
         opts = function(_, opts)
