@@ -157,11 +157,54 @@ return {
     -- Tinymist LSP Configuration
     {
         "neovim/nvim-lspconfig",
+        keys = {
+            {
+                "<leader>cP",
+                function()
+                    local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
+                    if not client then
+                        vim.notify("Tinymist client not attached", vim.log.levels.WARN)
+                        return
+                    end
+
+                    local buf_name = vim.api.nvim_buf_get_name(0)
+                    client:exec_cmd({
+                        title = "pin",
+                        command = "tinymist.pinMain",
+                        arguments = { buf_name },
+                    }, { bufnr = 0 })
+
+                    vim.notify("Tinymist: Pinned main to " .. vim.fs.basename(buf_name), vim.log.levels.INFO)
+                end,
+                ft = "typst",
+                desc = "Pin Main File",
+            },
+            {
+                "<leader>cU",
+                function()
+                    local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
+                    if not client then
+                        vim.notify("Tinymist client not attached", vim.log.levels.WARN)
+                        return
+                    end
+
+                    client:exec_cmd({
+                        title = "unpin",
+                        command = "tinymist.pinMain",
+                        arguments = { vim.NIL },
+                    }, { bufnr = 0 })
+
+                    vim.notify("Tinymist: Unpinned main file", vim.log.levels.INFO)
+                end,
+                ft = "typst",
+                desc = "Unpin Main File",
+            },
+        },
         opts = function(_, opts)
             opts.servers = opts.servers or {}
             opts.servers.tinymist = {
                 filetypes = { "typst" },
-                single_file_support = true,
+                single_file_support = false,
                 root_dir = function(fname)
                     return get_typst_project_root(fname)
                 end,
@@ -172,49 +215,6 @@ return {
                     projectResolution = "lockDatabase",
                     semanticTokens = "enable",
                 },
-
-                keys = {
-                    {
-                        "<leader>cp",
-                        function()
-                            local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
-                            if not client then
-                                vim.notify("Tinymist client not attached", vim.log.levels.WARN)
-                                return
-                            end
-
-                            local buf_name = vim.api.nvim_buf_get_name(0)
-                            client:exec_cmd({
-                                title = "pin",
-                                command = "tinymist.pinMain",
-                                arguments = { buf_name },
-                            }, { bufnr = 0 })
-
-                            vim.notify("Tinymist: Pinned main to " .. vim.fs.basename(buf_name), vim.log.levels.INFO)
-                        end,
-                        desc = "Tinymist: Pin Main File",
-                    },
-                    {
-                        "<leader>cu",
-                        function()
-                            local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
-                            if not client then
-                                vim.notify("Tinymist client not attached", vim.log.levels.WARN)
-                                return
-                            end
-
-                            client:exec_cmd({
-                                title = "unpin",
-                                command = "tinymist.pinMain",
-                                arguments = { vim.NIL },
-                            }, { bufnr = 0 })
-
-                            vim.notify("Tinymist: Unpinned main file", vim.log.levels.INFO)
-                        end,
-                        desc = "Tinymist: Unpin Main File",
-                    },
-                },
-
                 on_new_config = function(new_config, new_root_dir)
                     local bufname = vim.api.nvim_buf_get_name(0)
                     local font_dir = resolve_font_path(bufname)
