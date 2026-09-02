@@ -23,21 +23,19 @@ return {
     },
 
     {
-        "stevearc/conform.nvim",
+        "mason-org/mason-lspconfig.nvim",
         opts = {
-            formatters_by_ft = {
-                luau = { "stylua" },
+            automatic_enable = {
+                exclude = { "luau_lsp" },
             },
         },
     },
 
     {
-        "neovim/nvim-lspconfig",
+        "stevearc/conform.nvim",
         opts = {
-            servers = {
-                luau_lsp = {
-                    enabled = false,
-                },
+            formatters_by_ft = {
+                luau = { "stylua" },
             },
         },
     },
@@ -50,31 +48,34 @@ return {
             "nvim-lua/plenary.nvim",
         },
         opts = function()
-            local current_file = vim.api.nvim_buf_get_name(0)
-            local start_dir = (current_file ~= "" and vim.fs.dirname(current_file)) or vim.uv.cwd() or "."
-
+            local start_dir = vim.uv.cwd() or "."
             local root_marker =
-                vim.fs.find({ ".luaurc", ".taplo.toml", "types", ".git" }, { upward = true, path = start_dir })[1]
+                vim.fs.find({ ".luaurc", ".taplo.toml", ".git" }, { upward = true, path = start_dir })[1]
             local root_dir = root_marker and vim.fs.dirname(root_marker) or start_dir
 
-            local def_map = {}
-
-            -- Check standalone root definition file
-            local root_def = vim.fs.joinpath(root_dir, "definitions.d.luau")
-            if vim.uv.fs_stat(root_def) then
-                def_map["@"] = vim.fs.normalize(vim.fs.abspath(root_def))
-            end
-
-            -- Check all definitions in a types/ directory and map each with its basename
             local types_dir = vim.fs.joinpath(root_dir, "types")
+            local bundle_file = vim.fs.joinpath(root_dir, "types", ".all.d.luau")
+
+            -- Automatically scan types/ and merge all .d.luau files into a single root definition bundle
             if vim.uv.fs_stat(types_dir) then
+                local merged_content = { "--!strict\n" }
                 for name, type in vim.fs.dir(types_dir) do
-                    if type == "file" and name:match("%.d%.luau$") then
-                        local abs_path = vim.fs.normalize(vim.fs.abspath(vim.fs.joinpath(types_dir, name)))
-                        -- Strip extension (e.g., "ui.d.luau" -> "ui") or use the full name as the key
-                        local key = name:gsub("%.d%.luau$", "")
-                        def_map[key] = abs_path
+                    if type == "file" and name:match("%.d%.luau$") and name ~= ".all.d.luau" then
+                        local p = vim.fs.joinpath(types_dir, name)
+                        local f = io.open(p, "r")
+                        if f then
+                            local content = f:read("*a")
+                            f:close()
+                            -- Strip mode comments like --!nocheck or --!strict from subfiles
+                            content = content:gsub("^%-%-![^\n]*\n", "")
+                            table.insert(merged_content, content)
+                        end
                     end
+                end
+                local out = io.open(bundle_file, "w")
+                if out then
+                    out:write(table.concat(merged_content, "\n\n"))
+                    out:close()
                 end
             end
 
@@ -89,7 +90,9 @@ return {
                     enable_new_solver = true,
                 },
                 types = {
-                    definition_files = def_map,
+                    definition_files = {
+                        ["@"] = bundle_file,
+                    },
                 },
             }
         end,
