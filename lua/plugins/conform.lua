@@ -4,6 +4,8 @@ return {
         formatters_by_ft = {
             yaml = { "prettierd" },
             ["yaml.docker-compose"] = { "prettierd" },
+            json = { "prettierd" },
+            jsonc = { "prettierd" },
         },
     },
 }
