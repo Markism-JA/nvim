@@ -159,12 +159,62 @@ local function resolve_font_path(raw_path)
 end
 
 -- ============================================================================
+-- Centralized Pinning State Machine & Status Indicators
+-- ============================================================================
+--- Stores project-level pin state: [project_root] = { path = string, manual = boolean }
+local pinned_roots = {}
+
+local function update_typst_pin_indicators(target_root)
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].filetype == "typst" then
+            local buf_path = normalize_path(bufnr)
+            local root = get_typst_project_root(buf_path)
+
+            if not target_root or root == target_root then
+                local pin_info = pinned_roots[root]
+                if pin_info and pin_info.path then
+                    local is_main = (buf_path == pin_info.path)
+                    local tag = pin_info.manual and "📌 (manual)" or "📌"
+                    local target_name = vim.fs.basename(pin_info.path)
+
+                    if is_main then
+                        vim.b[bufnr].typst_pin_status = string.format("%s [Main]", tag)
+                    else
+                        vim.b[bufnr].typst_pin_status = string.format("%s -> %s", tag, target_name)
+                    end
+
+                    vim.b[bufnr].typst_pinned_file = pin_info.path
+                    vim.b[bufnr].typst_is_manual_pin = pin_info.manual
+                else
+                    vim.b[bufnr].typst_pin_status = ""
+                    vim.b[bufnr].typst_pinned_file = nil
+                    vim.b[bufnr].typst_is_manual_pin = false
+                end
+            end
+        end
+    end
+end
+
+local function get_active_typst_entrypoint(raw_path)
+    local path = normalize_path(raw_path)
+    local root = get_typst_project_root(path)
+    local pin_info = pinned_roots[root]
+
+    if pin_info and pin_info.path and vim.uv.fs_stat(pin_info.path) then
+        return pin_info.path, pin_info.manual
+    end
+
+    local detected = resolve_typst_entrypoint(path)
+    return detected, false
+end
+
+-- ============================================================================
 -- Custom Typst Exporter
 -- ============================================================================
 local function export_typst_document(target)
     local buf_path = vim.api.nvim_buf_get_name(0)
     local root = get_typst_project_root(buf_path)
-    local entrypoint = resolve_typst_entrypoint(buf_path)
+    local entrypoint = get_active_typst_entrypoint(buf_path)
     local font_dir = resolve_font_path(buf_path)
 
     local default_name = vim.fs.basename(entrypoint):gsub("%.typ$", "")
@@ -284,13 +334,14 @@ return {
                     },
 
                     settings = {
-                        exportPdf = "onSave",
+                        exportPdf = "onType",
                         formatterMode = "typstyle",
                         projectResolution = "lockDatabase",
                         semanticTokens = "enable",
                     },
 
                     keys = {
+                        -- Manual Override: Pin active buffer as main
                         {
                             "<leader>cP",
                             function()
@@ -299,19 +350,26 @@ return {
                                     vim.notify("Tinymist client not attached", vim.log.levels.WARN)
                                     return
                                 end
-                                local buf_name = vim.api.nvim_buf_get_name(0)
+
+                                local buf_name = normalize_path(0)
+                                local root = get_typst_project_root(buf_name)
+
+                                pinned_roots[root] = { path = buf_name, manual = true }
                                 client:exec_cmd({
                                     title = "pin",
                                     command = "tinymist.pinMain",
                                     arguments = { buf_name },
                                 }, { bufnr = 0 })
+
+                                update_typst_pin_indicators(root)
                                 vim.notify(
-                                    "Tinymist: Pinned main to " .. vim.fs.basename(buf_name),
+                                    "Tinymist: Manually pinned to " .. vim.fs.basename(buf_name),
                                     vim.log.levels.INFO
                                 )
                             end,
-                            desc = "Pin Main File",
+                            desc = "Pin Main File (Manual Override)",
                         },
+                        -- Reset: Clear manual override and fallback to auto-detection
                         {
                             "<leader>cU",
                             function()
@@ -320,20 +378,31 @@ return {
                                     vim.notify("Tinymist client not attached", vim.log.levels.WARN)
                                     return
                                 end
+
+                                local buf_name = normalize_path(0)
+                                local root = get_typst_project_root(buf_name)
+                                local auto_entrypoint = resolve_typst_entrypoint(buf_name)
+
+                                pinned_roots[root] = { path = auto_entrypoint, manual = false }
                                 client:exec_cmd({
                                     title = "unpin",
                                     command = "tinymist.pinMain",
-                                    arguments = { vim.NIL },
+                                    arguments = { auto_entrypoint },
                                 }, { bufnr = 0 })
-                                vim.notify("Tinymist: Unpinned main file", vim.log.levels.INFO)
+
+                                update_typst_pin_indicators(root)
+                                vim.notify(
+                                    "Tinymist: Reset pin to auto-detected " .. vim.fs.basename(auto_entrypoint),
+                                    vim.log.levels.INFO
+                                )
                             end,
-                            desc = "Unpin Main File",
+                            desc = "Reset Pin to Auto-Detected Main",
                         },
                         {
                             "<leader>cz",
                             function()
                                 local buf_name = vim.api.nvim_buf_get_name(0)
-                                local main_file = resolve_typst_entrypoint(buf_name)
+                                local main_file = get_active_typst_entrypoint(buf_name)
                                 local pdf_file = main_file:gsub("%.typ$", ".pdf")
 
                                 if vim.uv.fs_stat(pdf_file) then
@@ -365,7 +434,7 @@ return {
                             "<leader>cE",
                             function()
                                 local buf_path = vim.api.nvim_buf_get_name(0)
-                                local entrypoint = resolve_typst_entrypoint(buf_path)
+                                local entrypoint = get_active_typst_entrypoint(buf_path)
                                 local default_name = vim.fs.basename(entrypoint):gsub("%.typ$", "")
 
                                 vim.ui.input({
@@ -382,6 +451,30 @@ return {
                         },
                     },
 
+                    on_attach = function(client, bufnr)
+                        local buf_path = normalize_path(bufnr)
+                        local root = get_typst_project_root(buf_path)
+                        local pin_info = pinned_roots[root]
+                        local target_entrypoint = nil
+
+                        if pin_info and pin_info.manual and pin_info.path then
+                            target_entrypoint = pin_info.path
+                        else
+                            target_entrypoint = resolve_typst_entrypoint(buf_path)
+                            pinned_roots[root] = { path = target_entrypoint, manual = false }
+                        end
+
+                        if target_entrypoint and target_entrypoint ~= "" then
+                            client:exec_cmd({
+                                title = "pin",
+                                command = "tinymist.pinMain",
+                                arguments = { target_entrypoint },
+                            }, { bufnr = bufnr })
+                        end
+
+                        update_typst_pin_indicators(root)
+                    end,
+
                     on_init = function(client, _)
                         local target_path = client.root_dir or vim.api.nvim_buf_get_name(0)
                         local font_dir = resolve_font_path(target_path)
@@ -394,11 +487,13 @@ return {
                         local root = client.root_dir or get_typst_project_root(target_path)
 
                         client.settings = client.settings or {}
+                        client.settings.exportPdf = "onType"
                         client.settings.formatterMode = "typstyle"
                         client.settings.rootPath = root
                         client.settings.fontPaths = font_settings
 
                         client.settings.tinymist = client.settings.tinymist or {}
+                        client.settings.tinymist.exportPdf = "onType"
                         client.settings.tinymist.formatterMode = "typstyle"
                         client.settings.tinymist.rootPath = root
                         client.settings.tinymist.fontPaths = font_settings
