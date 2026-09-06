@@ -423,8 +423,8 @@ return {
         },
         opts = {
             -- Use a specific browser (e.g., Brave, Chromium, Firefox, Zen)
-            open_cmd = "zen-browser %s", -- '%s' is replaced by the local preview URL
-            -- or: open_cmd = "chromium --app=%s", -- opens as a standalone web app window
+            open_cmd = "firefox --private-window %s", -- Firefox (Gecko) is the most performant I've noticed
+            -- or: open_cmd = "zen-browser %s", -- '%s' is replaced by the local preview URL
             -- or: open_cmd = "brave --new-window %s",
 
             debug = false,
