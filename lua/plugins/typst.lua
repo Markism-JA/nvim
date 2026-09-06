@@ -248,7 +248,7 @@ return {
         "mason-org/mason.nvim",
         opts = function(_, opts)
             opts.ensure_installed = opts.ensure_installed or {}
-            vim.list_extend(opts.ensure_installed, { "tinymist" })
+            vim.list_extend(opts.ensure_installed, { "tinymist", "typstyle" })
         end,
     },
 
@@ -455,8 +455,19 @@ return {
         "stevearc/conform.nvim",
         opts = function(_, opts)
             opts.formatters_by_ft = opts.formatters_by_ft or {}
-            -- Try typstyle binary first; if absent, invoke LSP formatting
-            opts.formatters_by_ft.typst = { "typstyle", lsp_format = "fallback" }
+            opts.formatters = opts.formatters or {}
+
+            opts.formatters.typstyle = {
+                prepend_args = {
+                    -- "--wrap-text=sentence", -- One sentence per line (best for git diffs)
+                    "--wrap-text=fill", -- Wrap paragraphs to line-width (80 cols)
+
+                    "--line-width",
+                    "100",
+                },
+            }
+
+            opts.formatters_by_ft.typst = { "typstyle" }
         end,
     },
 }
