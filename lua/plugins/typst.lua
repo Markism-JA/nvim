@@ -52,16 +52,26 @@ vim.filetype.add({
 -- ============================================================================
 -- Workspace & Path Resolution
 -- ============================================================================
+---@param path? string|number
+---@return string
 local function normalize_path(path)
-    if type(path) == "number" then
-        path = vim.api.nvim_buf_get_name(path)
+    local p = path
+    if type(p) == "number" then
+        p = vim.api.nvim_buf_get_name(p)
     end
-    if not path or path == "" then
-        path = vim.api.nvim_buf_get_name(0)
+    if not p or p == "" then
+        p = vim.api.nvim_buf_get_name(0)
     end
-    return (path and path ~= "") and vim.fs.normalize(path) or vim.uv.cwd()
+
+    if p and p ~= "" then
+        return vim.fs.normalize(p)
+    end
+
+    return vim.uv.cwd() or "."
 end
 
+---@param raw_path? string|number
+---@return string
 local function get_typst_project_root(raw_path)
     local path = normalize_path(raw_path)
 
@@ -71,7 +81,9 @@ local function get_typst_project_root(raw_path)
     end
 
     local stat = vim.uv.fs_stat(path)
-    local start_dir = (stat and stat.type == "directory") and path or vim.fs.dirname(path)
+    local dirname = vim.fs.dirname(path)
+    ---@type string
+    local start_dir = ((stat and stat.type == "directory") and path) or dirname or vim.uv.cwd()
 
     local typst_root = vim.fs.root(start_dir, { "typst.toml" })
     if typst_root then
@@ -84,14 +96,16 @@ local function get_typst_project_root(raw_path)
     end
 
     local git_root = vim.fs.root(start_dir, { ".git" })
-    return git_root or start_dir or vim.fn.getcwd()
+    return git_root or start_dir
 end
 
 --- Locates the document entrypoint in multi-file projects (e.g., main.typ)
+---@param raw_path? string|number
+---@return string
 local function resolve_typst_entrypoint(raw_path)
     local buffer_path = normalize_path(raw_path)
     local root = get_typst_project_root(buffer_path)
-    local parent_dir = vim.fs.dirname(buffer_path)
+    local parent_dir = vim.fs.dirname(buffer_path) or root
     local entry_names = { "main.typ", "document.typ", "root.typ", "index.typ", "lib.typ" }
 
     -- 1. Search upwards from buffer directory to project root
@@ -107,7 +121,7 @@ local function resolve_typst_entrypoint(raw_path)
         if current == root then
             break
         end
-        current = vim.fs.dirname(current)
+        current = vim.fs.dirname(current) or root
     end
 
     -- 2. Check root directly
@@ -123,13 +137,16 @@ local function resolve_typst_entrypoint(raw_path)
 end
 
 --- Discovers project font directories
+---@param raw_path? string|number
+---@return string?
 local function resolve_font_path(raw_path)
     local path = normalize_path(raw_path)
     local root = get_typst_project_root(path)
+    local dir_parent = vim.fs.dirname(path) or root
     local font_candidates = {
         root .. "/fonts",
         root .. "/assets/fonts",
-        vim.fs.dirname(path) .. "/fonts",
+        dir_parent .. "/fonts",
     }
 
     for _, dir in ipairs(font_candidates) do
@@ -142,11 +159,8 @@ local function resolve_font_path(raw_path)
 end
 
 -- ============================================================================
--- Custom Typst Exporter (Flexible Destination & Renaming)
+-- Custom Typst Exporter
 -- ============================================================================
-
---- Exports the document to a specified target directory/file or custom name asynchronously.
---- @param target? string Optional target path or custom output filename.
 local function export_typst_document(target)
     local buf_path = vim.api.nvim_buf_get_name(0)
     local root = get_typst_project_root(buf_path)
@@ -255,145 +269,159 @@ return {
     -- Tinymist LSP Configuration
     {
         "neovim/nvim-lspconfig",
-        keys = {
-            {
-                "<leader>cP",
-                function()
-                    local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
-                    if not client then
-                        vim.notify("Tinymist client not attached", vim.log.levels.WARN)
-                        return
-                    end
+        opts = {
+            servers = {
+                tinymist = {
+                    filetypes = { "typst" },
+                    single_file_support = true,
+                    root_markers = { "typst.toml", ".git" },
+                    root_dir = function(bufnr_or_path)
+                        return get_typst_project_root(bufnr_or_path)
+                    end,
 
-                    local buf_name = vim.api.nvim_buf_get_name(0)
-                    client:exec_cmd({
-                        title = "pin",
-                        command = "tinymist.pinMain",
-                        arguments = { buf_name },
-                    }, { bufnr = 0 })
+                    init_options = {
+                        formatterMode = "typstyle",
+                    },
 
-                    vim.notify("Tinymist: Pinned main to " .. vim.fs.basename(buf_name), vim.log.levels.INFO)
-                end,
-                ft = "typst",
-                desc = "Pin Main File",
-            },
-            {
-                "<leader>cU",
-                function()
-                    local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
-                    if not client then
-                        vim.notify("Tinymist client not attached", vim.log.levels.WARN)
-                        return
-                    end
+                    settings = {
+                        exportPdf = "onSave",
+                        formatterMode = "typstyle",
+                        projectResolution = "lockDatabase",
+                        semanticTokens = "enable",
+                    },
 
-                    client:exec_cmd({
-                        title = "unpin",
-                        command = "tinymist.pinMain",
-                        arguments = { vim.NIL },
-                    }, { bufnr = 0 })
+                    keys = {
+                        {
+                            "<leader>cP",
+                            function()
+                                local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
+                                if not client then
+                                    vim.notify("Tinymist client not attached", vim.log.levels.WARN)
+                                    return
+                                end
+                                local buf_name = vim.api.nvim_buf_get_name(0)
+                                client:exec_cmd({
+                                    title = "pin",
+                                    command = "tinymist.pinMain",
+                                    arguments = { buf_name },
+                                }, { bufnr = 0 })
+                                vim.notify(
+                                    "Tinymist: Pinned main to " .. vim.fs.basename(buf_name),
+                                    vim.log.levels.INFO
+                                )
+                            end,
+                            desc = "Pin Main File",
+                        },
+                        {
+                            "<leader>cU",
+                            function()
+                                local client = vim.lsp.get_clients({ name = "tinymist", bufnr = 0 })[1]
+                                if not client then
+                                    vim.notify("Tinymist client not attached", vim.log.levels.WARN)
+                                    return
+                                end
+                                client:exec_cmd({
+                                    title = "unpin",
+                                    command = "tinymist.pinMain",
+                                    arguments = { vim.NIL },
+                                }, { bufnr = 0 })
+                                vim.notify("Tinymist: Unpinned main file", vim.log.levels.INFO)
+                            end,
+                            desc = "Unpin Main File",
+                        },
+                        {
+                            "<leader>cz",
+                            function()
+                                local buf_name = vim.api.nvim_buf_get_name(0)
+                                local main_file = resolve_typst_entrypoint(buf_name)
+                                local pdf_file = main_file:gsub("%.typ$", ".pdf")
 
-                    vim.notify("Tinymist: Unpinned main file", vim.log.levels.INFO)
-                end,
-                ft = "typst",
-                desc = "Unpin Main File",
-            },
-            {
-                "<leader>cz",
-                function()
-                    local buf_name = vim.api.nvim_buf_get_name(0)
-                    local main_file = resolve_typst_entrypoint(buf_name)
-                    local pdf_file = main_file:gsub("%.typ$", ".pdf")
+                                if vim.uv.fs_stat(pdf_file) then
+                                    local line = vim.api.nvim_win_get_cursor(0)[1]
+                                    vim.fn.jobstart({
+                                        "zathura",
+                                        "--synctex-forward",
+                                        string.format("%d:1:%s", line, buf_name),
+                                        pdf_file,
+                                    }, { detach = true })
+                                    vim.notify("Opened Zathura: " .. vim.fs.basename(pdf_file), vim.log.levels.INFO)
+                                else
+                                    vim.notify(
+                                        "PDF not found. Save the file first to trigger compilation.",
+                                        vim.log.levels.WARN
+                                    )
+                                end
+                            end,
+                            desc = "Open in Zathura",
+                        },
+                        {
+                            "<leader>ce",
+                            function()
+                                vim.cmd("TypstExport")
+                            end,
+                            desc = "Export PDF (Default)",
+                        },
+                        {
+                            "<leader>cE",
+                            function()
+                                local buf_path = vim.api.nvim_buf_get_name(0)
+                                local entrypoint = resolve_typst_entrypoint(buf_path)
+                                local default_name = vim.fs.basename(entrypoint):gsub("%.typ$", "")
 
-                    if vim.uv.fs_stat(pdf_file) then
-                        local line = vim.api.nvim_win_get_cursor(0)[1]
-                        vim.fn.jobstart({
-                            "zathura",
-                            "--synctex-forward",
-                            string.format("%d:1:%s", line, buf_name),
-                            pdf_file,
-                        }, { detach = true })
-                        vim.notify("Opened Zathura: " .. vim.fs.basename(pdf_file), vim.log.levels.INFO)
-                    else
-                        vim.notify("PDF not found. Save the file first to trigger compilation.", vim.log.levels.WARN)
-                    end
-                end,
-                ft = "typst",
-                desc = "Open in Zathura",
-            },
-            -- Quick export to project dist/<entrypoint>.pdf
-            {
-                "<leader>ce",
-                function()
-                    vim.cmd("TypstExport")
-                end,
-                ft = "typst",
-                desc = "Export PDF (Default)",
-            },
-            -- Interactive prompt: enter a custom name OR full path
-            {
-                "<leader>cE",
-                function()
-                    local buf_path = vim.api.nvim_buf_get_name(0)
-                    local entrypoint = resolve_typst_entrypoint(buf_path)
-                    local default_name = vim.fs.basename(entrypoint):gsub("%.typ$", "")
+                                vim.ui.input({
+                                    prompt = "Export name or path: ",
+                                    default = default_name,
+                                    completion = "file",
+                                }, function(input)
+                                    if input and input ~= "" then
+                                        vim.cmd("TypstExport " .. vim.fn.fnameescape(input))
+                                    end
+                                end)
+                            end,
+                            desc = "Export PDF (Custom Name / Path)",
+                        },
+                    },
 
-                    vim.ui.input({
-                        prompt = "Export name or path: ",
-                        default = default_name,
-                        completion = "file",
-                    }, function(input)
-                        if input and input ~= "" then
-                            vim.cmd("TypstExport " .. vim.fn.fnameescape(input))
+                    on_init = function(client, _)
+                        local target_path = client.root_dir or vim.api.nvim_buf_get_name(0)
+                        local font_dir = resolve_font_path(target_path)
+                        local font_settings = { "fonts", "assets/fonts" }
+
+                        if font_dir then
+                            table.insert(font_settings, font_dir)
                         end
-                    end)
+
+                        local root = client.root_dir or get_typst_project_root(target_path)
+
+                        client.settings = client.settings or {}
+                        client.settings.formatterMode = "typstyle"
+                        client.settings.rootPath = root
+                        client.settings.fontPaths = font_settings
+
+                        client.settings.tinymist = client.settings.tinymist or {}
+                        client.settings.tinymist.formatterMode = "typstyle"
+                        client.settings.tinymist.rootPath = root
+                        client.settings.tinymist.fontPaths = font_settings
+
+                        client:notify("workspace/didChangeConfiguration", {
+                            settings = client.settings,
+                        })
+
+                        typst_log("LSP Dynamic Settings Applied (on_init)", {
+                            rootPath = root,
+                            fontPaths = font_settings,
+                        })
+                    end,
+                },
+            },
+
+            setup = {
+                tinymist = function(_, opts)
+                    require("lspconfig").tinymist.setup(opts)
+                    return true
                 end,
-                ft = "typst",
-                desc = "Export PDF (Custom Name / Path)",
             },
         },
-
-        filetypes = { "typst" },
-        single_file_support = true,
-        root_markers = { "typst.toml", ".git" },
-        root_dir = function(bufnr)
-            return get_typst_project_root(bufnr)
-        end,
-
-        init_options = {
-            formatterMode = "typstyle",
-        },
-
-        settings = {
-            exportPdf = "onSave",
-            formatterMode = "typstyle",
-            projectResolution = "lockDatabase",
-            semanticTokens = "enable",
-        },
-
-        before_init = function(_, config)
-            local buffname = vim.api.nvim.buf_get_name(0)
-            local font_dir = resolve_font_path(buffname)
-            local font_settings = { "fonts", "assets/fonts" }
-
-            if font_dir then
-                table.insert(font_settings, font_dir)
-            end
-
-            local root = config.root_dir or get_typst_project_root(buffname)
-            config.settings.formatterMode = "typstyle"
-            config.settings.rootPath = root
-            config.settings.fontPaths = font_settings
-
-            config.settings.tinymist = config.settings.tinymist or {}
-            config.settings.tinymist.formatterMode = "typstyle"
-            config.settings.tinymist.rootPath = root
-            config.settings.tinymist.fontPaths = font_settings
-
-            typst_log("LSP Injection Payload (before_init)", {
-                rootPath = root,
-                fontPaths = font_settings,
-            })
-        end,
     },
 
     -- Typst Preview Configuration
