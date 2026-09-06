@@ -351,65 +351,48 @@ return {
                 desc = "Export PDF (Custom Name / Path)",
             },
         },
-        opts = function(_, opts)
-            opts.servers = opts.servers or {}
-            opts.servers.tinymist = {
-                filetypes = { "typst" },
-                single_file_support = false,
-                root_dir = function(fname)
-                    return get_typst_project_root(fname)
-                end,
 
-                init_options = {
-                    formatterMode = "typstyle",
-                },
-
-                settings = {
-                    exportPdf = "onSave",
-                    formatterMode = "typstyle",
-                    projectResolution = "lockDatabase",
-                    semanticTokens = "enable",
-                },
-                on_new_config = function(new_config, new_root_dir)
-                    local bufname = vim.api.nvim_buf_get_name(0)
-                    local font_dir = resolve_font_path(bufname)
-                    local font_settings = { "fonts", "assets/fonts" }
-
-                    if font_dir then
-                        table.insert(font_settings, font_dir)
-                    end
-
-                    new_config.init_options = new_config.init_options or {}
-                    new_config.init_options.formatterMode = "typstyle"
-
-                    new_config.settings = new_config.settings or {}
-                    new_config.settings.formatterMode = "typstyle"
-                    new_config.settings.rootPath = new_root_dir
-                    new_config.settings.fontPaths = font_settings
-
-                    new_config.settings.tinymist = new_config.settings.tinymist or {}
-                    new_config.settings.tinymist.formatterMode = "typstyle"
-                    new_config.settings.tinymist.rootPath = new_root_dir
-                    new_config.settings.tinymist.fontPaths = font_settings
-
-                    typst_log("LSP Injection Payload (on_new_config)", {
-                        rootPath = new_root_dir,
-                        fontPaths = font_settings,
-                    })
-                end,
-            }
+        filetypes = { "typst" },
+        single_file_support = true,
+        root_markers = { "typst.toml", ".git" },
+        root_dir = function(bufnr)
+            return get_typst_project_root(bufnr)
         end,
-        -- Trigger LSP registration and enable Tinymist on Neovim 0.12
-        config = function(_, opts)
-            local lspconfig = require("lspconfig")
-            local tinymist_opts = opts.servers and opts.servers.tinymist or {}
 
-            lspconfig.tinymist.setup(tinymist_opts)
+        init_options = {
+            formatterMode = "typstyle",
+        },
 
-            -- Explicitly enable server in Nvim 0.12 core
-            if vim.lsp.enable then
-                vim.lsp.enable("tinymist")
+        settings = {
+            exportPdf = "onSave",
+            formatterMode = "typstyle",
+            projectResolution = "lockDatabase",
+            semanticTokens = "enable",
+        },
+
+        before_init = function(_, config)
+            local buffname = vim.api.nvim.buf_get_name(0)
+            local font_dir = resolve_font_path(buffname)
+            local font_settings = { "fonts", "assets/fonts" }
+
+            if font_dir then
+                table.insert(font_settings, font_dir)
             end
+
+            local root = config.root_dir or get_typst_project_root(buffname)
+            config.settings.formatterMode = "typstyle"
+            config.settings.rootPath = root
+            config.settings.fontPaths = font_settings
+
+            config.settings.tinymist = config.settings.tinymist or {}
+            config.settings.tinymist.formatterMode = "typstyle"
+            config.settings.tinymist.rootPath = root
+            config.settings.tinymist.fontPaths = font_settings
+
+            typst_log("LSP Injection Payload (before_init)", {
+                rootPath = root,
+                fontPaths = font_settings,
+            })
         end,
     },
 

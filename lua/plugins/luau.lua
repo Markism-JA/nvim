@@ -23,10 +23,10 @@ return {
     },
 
     {
-        "mason-org/mason-lspconfig.nvim",
+        "neovim/nvim-lspconfig",
         opts = {
-            automatic_enable = {
-                exclude = { "luau_lsp" },
+            servers = {
+                luau_lsp = { enabled = false },
             },
         },
     },
