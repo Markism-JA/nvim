@@ -1,7 +1,10 @@
 return {
     "mason-org/mason.nvim",
-    log_level = vim.log.levels.DEBUG,
     opts = {
+        log_level = vim.log.levels.INFO,
+        registry_cache = {
+            refresh = false,
+        },
         ensure_installed = {
             -- lsp
             "lua-language-server",
@@ -10,7 +13,6 @@ return {
             "rust-analyzer",
             "roslyn",
             "powershell-editor-services",
-            "jdtls",
             "bash-language-server",
             "clangd",
             "ltex-ls",
