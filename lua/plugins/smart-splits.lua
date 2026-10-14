@@ -1,12 +1,15 @@
 return {
     "mrjones2014/smart-splits.nvim",
     lazy = false,
+    dependencies = {
+        { "smart-splits-nvim/backend-tmux", main = "smart-splits-backend-tmux" },
+    },
     opts = {
+        mux = {
+            backend = "smart-splits-backend-tmux",
+        },
         ignored_filetypes = { "nofile", "quickfix", "qf", "prompt" },
         ignored_buftypes = { "NvimTree", "neo-tree", "notify" },
-        multiplexer = {
-            tmux = true,
-        },
     },
     keys = {
         -- Move between splits
