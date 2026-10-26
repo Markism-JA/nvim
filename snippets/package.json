@@ -9,6 +9,10 @@
             {
                 "language": "xml",
                 "path": "./csproj.json"
+            },
+            {
+                "language": "gitcommit",
+                "path": "./gitcommit.json"
             }
         ]
     }

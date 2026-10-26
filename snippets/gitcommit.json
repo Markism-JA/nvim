@@ -1,0 +1,119 @@
+{
+  "Feature Commit": {
+    "prefix": "feat",
+    "body": [
+      "feat(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain why this change is being made and what it does.}",
+      ""
+    ],
+    "description": "Conventional Commit: Introduce a new feature"
+  },
+  "Bug Fix Commit": {
+    "prefix": "fix",
+    "body": [
+      "fix(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain the issue fixed and why the solution resolves it.}",
+      ""
+    ],
+    "description": "Conventional Commit: Fix a bug"
+  },
+  "Documentation Commit": {
+    "prefix": "docs",
+    "body": [
+      "docs(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain the documentation updates made.}",
+      ""
+    ],
+    "description": "Conventional Commit: Documentation only changes"
+  },
+  "Refactor Commit": {
+    "prefix": "refactor",
+    "body": [
+      "refactor(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain the refactoring done and its motivation.}",
+      ""
+    ],
+    "description": "Conventional Commit: Code change that neither fixes a bug nor adds a feature"
+  },
+  "Performance Commit": {
+    "prefix": "perf",
+    "body": [
+      "perf(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain the performance improvement and any benchmarks.}",
+      ""
+    ],
+    "description": "Conventional Commit: Code change that improves performance"
+  },
+  "Test Commit": {
+    "prefix": "test",
+    "body": [
+      "test(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain test coverage added or modified.}",
+      ""
+    ],
+    "description": "Conventional Commit: Adding missing tests or correcting existing tests"
+  },
+  "Chore Commit": {
+    "prefix": "chore",
+    "body": [
+      "chore(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain maintenance or tooling updates.}",
+      ""
+    ],
+    "description": "Conventional Commit: Miscellaneous commits (maintenance, config)"
+  },
+  "Build Commit": {
+    "prefix": "build",
+    "body": [
+      "build(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain changes affecting build system or dependencies.}",
+      ""
+    ],
+    "description": "Conventional Commit: Changes affecting build system or external dependencies"
+  },
+  "CI Commit": {
+    "prefix": "ci",
+    "body": [
+      "ci(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain changes to CI/CD workflows and configuration.}",
+      ""
+    ],
+    "description": "Conventional Commit: Changes to CI configuration files and scripts"
+  },
+  "Style Commit": {
+    "prefix": "style",
+    "body": [
+      "style(${1:scope}): ${2:description}",
+      "",
+      "${3:Explain formatting/styling changes made.}",
+      ""
+    ],
+    "description": "Conventional Commit: Code style changes (whitespace, formatting, etc)"
+  },
+  "Revert Commit": {
+    "prefix": "revert",
+    "body": [
+      "revert: ${1:header of reverted commit}",
+      "",
+      "This reverts commit ${2:commit-hash}.",
+      "${3:Explain why the commit is being reverted.}"
+    ],
+    "description": "Conventional Commit: Revert a previous commit"
+  },
+  "Breaking Change Footer": {
+    "prefix": "breaking",
+    "body": [
+      "BREAKING CHANGE: ${1:description of breaking change and migration path}"
+    ],
+    "description": "Conventional Commit: Breaking change footer"
+  }
+}
