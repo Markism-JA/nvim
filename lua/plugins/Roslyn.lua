@@ -1,7 +1,16 @@
 return {
-    "seblyng/roslyn.nvim",
-    ft = { "cs", "csproj", "sln", "slnx" },
+    dir = vim.fn.expand("~/Coding/Projects/roslyn.nvim"),
+    name = "roslyn.nvim",
+    ft = { "cs", "csproj", "sln", "slnx", "slnf" },
     opts = {
+        broad_search = true,
+        choose_target = function(targets)
+            return vim.iter(targets):find(function(target)
+                return vim.endswith(target, ".slnf")
+            end) or vim.iter(targets):find(function(target)
+                return vim.endswith(target, ".slnx")
+            end) or targets[1]
+        end,
         config = {
             settings = {
                 ["csharp|background_analysis"] = {
